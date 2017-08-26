@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1503787282062.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "69E74EA5",
+    "lastKnownWriteTime" : 7308604914264011873,
+    "last_content_update" : 1503787282062,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "FD1B19BE",
+        "caption" : "laps",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=laps&cache_key=FD1B19BE",
+        "displayedObservations" : 153755,
+        "environment" : "",
+        "object" : "laps",
+        "preview" : 0,
+        "totalObservations" : 153755,
+        "variables" : 29
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
