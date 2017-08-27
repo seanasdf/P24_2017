@@ -33,9 +33,13 @@ if (file.exists("teamdata.rda")) {
   tm_data <- map(teampages, html_nodes, "#laps-list-table") %>% 
     map(html_table)
   
-  
+  #get vacation stop times
+  vacationstops <- read_html("http://leaderboard.powderhorn24.com/vacation_stops") %>% 
+    html_node("#vacation-stops-list-table") %>% 
+    html_table()
+
   #save objects to cache them
-  save(ldrboard, tm_cat, tm_name, tm_data, file="teamdata.rda")
+  save(ldrboard, tm_cat, tm_name, tm_data, vacationstops, file="teamdata.rda")
 }
 
 #unlist and clean up team names
@@ -77,9 +81,18 @@ laps <- map2_df(vars, hourbreaks, function(x,y) {
 })
 
 
-#vacation stops
-vacay <- tbl_df(tm_name) %>% 
-  set_names("team") 
+#read in vacation stops data
+vacay <- map(tm_data, 2)
 
-blah <- map(tm_data, 2)
-blah <- replace(blah, map(blah, is.null), "Z")
+#replace teams with no vacation stops with blank tibbles
+blankdf <- tibble(X1=as.character(NA),
+                  X2=as.character(NA),
+                  X3=as.character(NA))
+
+vacay <- map_if(vacay, 
+       unlist(map(vacay, is.null)),
+       function(x) blankdf) %>% 
+  map2(tm_name,
+       function(x,y) mutate(x,tm_name=y)) %>% 
+  map(.x=., function(x) left_join(x, vacationstops, by=c("X1"="Name"))) %>% 
+  map(setNames, c("stopname", "recorded", "rider", "tm_name", "location", "starts", "ends"))
