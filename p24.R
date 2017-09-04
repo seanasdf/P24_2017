@@ -42,6 +42,10 @@ if (file.exists("teamdata.rda")) {
   save(ldrboard, tm_cat, tm_name, tm_data, vacationstops, file="teamdata.rda")
 }
 
+###############################################################
+############ LAPS LAPS LAPS LAPS LAPS LAPS ####################
+###############################################################
+
 #unlist and clean up team names
 tm_name <- unlist(tm_name) %>% 
   map_chr(trimws, which="both")
@@ -69,17 +73,26 @@ laps <- map(tm_data, 1) %>%
 
 # get breakpoints for hours and variable
 hourbreaks <- mdy_hm("08-18-2017, 19:00") + hours(1)*c(1:23) 
-vars <- map_chr(hourbreaks, function(x) paste0("hour", 
+lapvarnames <- map_chr(hourbreaks, function(x) paste0("laps_hour_", 
                                                ifelse(hour(x)>=20, hour(x)-19, hour(x)+5)))
 
 # number of laps at each hour interval, by team
-laps <- map2_df(vars, hourbreaks, function(x,y) {
-  varname <- quo_name(x)
+for (i in 1:length(hourbreaks)) {
+  varname <- quo_name(lapvarnames[i])
+  time <- hourbreaks[i]
   laps <- laps %>% 
-    group_by(team) %>% 
-    mutate(!!varname := sum(datetime<y))
-})
+    group_by(team) %>%  
+    mutate(!!varname := sum(time>datetime)) 
+}
 
+#condense to just list of teams
+team_laps <- laps %>% 
+  select(team, category, laps_hour_1:laps_hour_23) %>% 
+  distinct()
+
+###############################################################
+############ VACAY VACAY VACAY VACAY VACAY ####################
+###############################################################
 
 #read in vacation stops data
 vacay <- map(tm_data, 2)
@@ -92,7 +105,114 @@ blankdf <- tibble(X1=as.character(NA),
 vacay <- map_if(vacay, 
        unlist(map(vacay, is.null)),
        function(x) blankdf) %>% 
+  #add team name
   map2(tm_name,
        function(x,y) mutate(x,tm_name=y)) %>% 
+  #join with data on vacatino stop and start time
   map(.x=., function(x) left_join(x, vacationstops, by=c("X1"="Name"))) %>% 
-  map(setNames, c("stopname", "recorded", "rider", "tm_name", "location", "starts", "ends"))
+  map(setNames, c("stopname", "recorded", "rider", "team", "location", "starts", "ends")) %>%
+  bind_rows() %>% 
+  tbl_df() %>% 
+  mutate(time = parse_date_time(ends, "hmsp"),
+         day = ifelse(hour(time)>=19 & hour(time) <=23, "Friday", "Saturday"),
+         datetime = ifelse(day=="Friday", paste0("8/18/2017, ", ends), paste0("8/19/2017, ", ends)),
+         end_datetime = mdy_hms(datetime)
+  ) %>% 
+  select(-time, -day, -datetime) %>% 
+  filter(!is.na(rider)) %>% 
+  arrange(team, end_datetime)
+
+#make names for vacation stop
+vacayvarnames <- map_chr(hourbreaks, function(x) paste0("vacay_hour_", 
+                                                      ifelse(hour(x)>=20, hour(x)-19, hour(x)+5)))
+
+# number of vacation stops  at each hour interval, by team
+for (i in 1:length(hourbreaks)) {
+  varname <- quo_name(vacayvarnames[i])
+  time <- hourbreaks[i]
+  vacay <- vacay %>% 
+    group_by(team) %>%  
+    mutate(!!varname := sum(time>end_datetime)) 
+}
+
+team_vacay <- vacay %>%
+  select(team, vacay_hour_1:vacay_hour_23) %>% 
+  distinct() 
+
+###############################################################
+############ VACAY VACAY VACAY VACAY VACAY ####################
+###############################################################
+
+#read in vacation stops data
+vol <- map(tm_data, 3)
+
+
+#replace teams with no volunteer shifts with blank tibbles
+blankdf <- tibble(X1=as.character(NA),
+                  X2=as.character(NA),
+                  X3=as.character(NA),
+                  X4=as.character(NA))
+
+
+#add team name, rename vars, combine list of dfs, get full date/time, select only relevants
+vol <- vol %>% 
+  map_if(unlist(map(vol, is.null)),
+         function(x) blankdf) %>%
+  map2(tm_name,
+     function(x,y) mutate(x,tm_name=y)) %>% 
+  map(setNames, c("volshift", "start", "end", "emoji", "team")) %>%
+  map(select, team, volshift, end) %>% 
+  bind_rows() %>% 
+  tbl_df() %>%
+  mutate(time = parse_date_time(end, "hmsp"),
+         day = ifelse(hour(time)>=19 & hour(time) <=23, "Friday", "Saturday"),
+         datetime = ifelse(day=="Friday", paste0("8/18/2017, ", end), paste0("8/19/2017, ", end)),
+         end_datetime = mdy_hms(datetime)
+  ) %>% 
+  select(-time, -day, -datetime, -end) %>% 
+  filter(!is.na(volshift))
+
+
+#make names for vacation stop
+volvarnames <- map_chr(hourbreaks, function(x) paste0("vol_hour_", 
+                                                        ifelse(hour(x)>=20, hour(x)-19, hour(x)+5)))
+
+# number of vacation stops  at each hour interval, by team
+for (i in 1:length(hourbreaks)) {
+  varname <- quo_name(volvarnames[i])
+  time <- hourbreaks[i]
+  vol <- vol %>% 
+    group_by(team) %>%  
+    mutate(!!varname := sum(time>end_datetime)) 
+}
+
+team_vol <- vol %>% 
+  select(team, vol_hour_1:vol_hour_23) %>% 
+  distinct() 
+
+
+###############################################################
+############ POINTS POINTS POINTS POINTS ######################
+###############################################################
+team_laps_long <- team_laps %>% 
+  gather(laps_hour_1:laps_hour_23, key="hour", value="laps") %>% 
+  mutate(hour = as.numeric(str_extract(hour, "\\d+"))) 
+
+team_vacay_long <- team_vacay %>% 
+  gather(vacay_hour_1:vacay_hour_23, key="hour", value="vacay_stops") %>% 
+  mutate(hour = as.numeric(str_extract(hour, "\\d+"))) 
+
+team_vol_long <- team_vol %>% 
+  gather(vol_hour_1:vol_hour_23, key="hour", value="vol_shifts") %>% 
+  mutate(hour = as.numeric(str_extract(hour, "\\d+"))) 
+
+team_data <- left_join(team_laps_long, team_vacay_long) %>% 
+  left_join(team_vol_long) %>% 
+  mutate(vol_shifts = ifelse(is.na(vol_shifts), 0, vol_shifts),
+         vacay_stops = ifelse(is.na(vacay_stops), 0, vacay_stops)) %>% 
+  mutate(points = laps + vacay_stops * 2 + vol_shifts * 2) %>% 
+  arrange(hour, -points, team)
+
+save(team_data, file="./p24_graph_2017/teamdata.rda")
+
+
