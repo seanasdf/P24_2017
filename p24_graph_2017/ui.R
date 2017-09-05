@@ -4,7 +4,7 @@ teamcats <- c("All Categories", sort(unique(team_data$category)))
 # Define UI for application that plots random distributions 
 shinyUI(fluidPage(
   
-  includeCSS("style.css"),
+  theme="style.css",
   
   # Application title
   fluidRow(
@@ -13,37 +13,54 @@ shinyUI(fluidPage(
     )
   ),
   
+
+  
   fluidRow(
     column(12,
-           plotOutput("p24plot",
-                      width="800px",
-                      height="400px")
+           plotOutput("p24plot")
     )
   ),
   
   fluidRow(
-    column(4,
+    column(3,
            
       wellPanel(
-           selectInput("team",
+           selectInput("team1",
                        "Select a Team", 
-                       choices = teamnames)
+                       choices = teamnames,
+                       selected = sample(teamnames, 1))
       )
     ),
+    column(3,
+           
+           wellPanel(
+             selectInput("team2",
+                         "Comparison Team", 
+                         choices = c("---None---",teamnames),
+                         selected = "---None---")
+           )
+    ),
     
-    column(4,
+    column(3,
       wellPanel(
          selectInput("category",
                      "Select Team Category",
                      choices = teamcats)
       )
     ),
-    column(4,
+    column(3,
            wellPanel(
              selectInput("yvar",
                          "Outcome to Plot",
                          choices = c("Points", "Laps", "Vacation Stops"))
            )
+    )
+  ),
+  fluidRow(
+    column(12,
+          checkboxInput("allteams", 
+                        label = "Compare with Other Teams in Category", 
+                        value = TRUE)
     )
   )
 ))
