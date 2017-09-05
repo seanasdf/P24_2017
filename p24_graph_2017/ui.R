@@ -1,18 +1,25 @@
-library(shiny)
 teamnames <- sort(unique(team_data$team))
 teamcats <- c("All Categories", sort(unique(team_data$category)))
 
 # Define UI for application that plots random distributions 
 shinyUI(fluidPage(
   
-  #includeCSS("style.css"),
+  includeCSS("style.css"),
   
   # Application title
-  headerPanel("Powderhorn 24 Race Results"),
-
-  plotOutput("p24plot",
-             width="1000px",
-             height="400px"),
+  fluidRow(
+    column(12,
+      headerPanel("Powderhorn 24 Race Results")
+    )
+  ),
+  
+  fluidRow(
+    column(12,
+           plotOutput("p24plot",
+                      width="800px",
+                      height="400px")
+    )
+  ),
   
   fluidRow(
     column(4,
