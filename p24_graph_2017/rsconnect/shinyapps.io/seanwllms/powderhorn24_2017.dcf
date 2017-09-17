@@ -5,8 +5,8 @@ account: seanwllms
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 210784
-bundleId: 967547
+bundleId: 967548
 url: https://seanwllms.shinyapps.io/powderhorn24_2017/
-when: 1504580039.79964
+when: 1504580187.5386
 asMultiple: FALSE
 asStatic: FALSE
